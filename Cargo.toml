@@ -1,0 +1,10 @@
+[package]
+name = "rusty_nn"
+version = "0.0.1"
+edition = "2021"
+
+
+[dependencies]
+crossterm = "0.27"
+rand = "0.8"
+

@@ -168,8 +168,37 @@ impl Network{
 
 fn main(){
 
-	println!("A rusty begginging");
+	//I'ma to a quick run of the foward pass to see hows it lookin
 
+
+	//Lets init the layer structure
+	let layers :Vec<usize> = vec![3,2,1];
+
+	let input_activations :Vec<f32> = vec![2.5,1.3,0.2];
+
+	let input_layer = Layer::first(input_activations);
+	
+	let mut net = Network::new(layers);
+
+	net.pass(input_layer);
+
+	let modified = net.layers;
+
+
+	for layer in modified{
+		
+		for element in layer.activations{
+
+			print!("| {} | ",element);
+
+		}
+
+		println!(" ");
+
+
+	}
+
+	
 
 
 }

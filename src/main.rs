@@ -1,4 +1,14 @@
 use rand::Rng;
+use std::f32::consts;
+
+
+fn sigmoid(input: f32) -> f32{
+
+	1.0/(1.0 + (-input).exp())
+
+
+}
+
 
 
 fn prod(weights: Vec<Vec<f32>>, input: Vec<f32>) -> Vec<f32>{
@@ -23,32 +33,22 @@ fn prod(weights: Vec<Vec<f32>>, input: Vec<f32>) -> Vec<f32>{
 
 
 
-
-
 fn add(input: Vec<f32>,bias: Vec<f32>) -> Vec<f32>{
 
 	let mut output = vec![];
 
-
 	for i in 0..input.len(){
 
-		output.push(input[i] + bias[0]);
-
+		output.push(input[i] + bias[i]);
 }
-
-
-
 	output
-
-
-
 }
 
 
 
 
 
-
+#[derive(Clone)]
 struct Layer{
 	activations: Vec<f32>,
 }
@@ -63,23 +63,20 @@ impl Layer {
 }
 	
 	fn new(input: Layer, cons: Connections ) -> Self{
-
+	let non_biased = prod(cons.weights, input.activations);
+	let biased = add(non_biased,cons.biases);
+	let squished = biased.iter().map(|x| sigmoid(*x)).collect();
 	Self{
-		activations: vec![],//placeholder for now
+		activations: squished,
 	
 	}	
-
-
-
 }
-
-
 }
 
 
 
 
-
+#[derive(Clone)]
 struct Connections{
 	weights: Vec<Vec<f32>>,
 	biases: Vec<f32>,
@@ -94,8 +91,8 @@ impl Connections{
 		let mut rng = rand::thread_rng();
 		
 		let mut weights = 
-		(0..st_layer_len).map(|_| {
-		(0..nd_layer_len).map(|_| rng.gen::<f32>() * 4.0 - 2.0)//random in (-2,2)
+		(0..nd_layer_len).map(|_| {
+		(0..st_layer_len).map(|_| rng.gen::<f32>() * 4.0 - 2.0)//random in (-2,2)
 		.collect()}).collect();
 		
 		let mut biases = 
@@ -112,7 +109,61 @@ impl Connections{
 
 
 
-struct Network{}
+struct Network{
+	layers: Vec<Layer>,
+	cons: Vec<Connections>
+}
+
+
+
+impl Network{
+	fn new(layers: Vec<usize>) -> Self{
+
+
+		let mut cons = vec![];
+
+		for i in 1..layers.len(){
+		
+			let layer_con = Connections::new(layers[i-1], layers[i]);
+			cons.push(layer_con);
+		}
+
+		let empty_vec = vec![];
+		
+
+		Self{
+			
+			cons: cons,
+			layers:empty_vec,
+
+		}
+
+	}
+
+	/*
+	it is to be mentioned that the first layer is to be the same size as the already declared
+	input of this network
+	*/
+	pub fn pass(&mut self,input : Layer){
+		
+		let mut current_layer = input;
+
+		//making sure the first layer is also in the network
+		self.layers.push(current_layer.clone());
+
+		for con in self.cons.clone(){
+		
+			let next_layer = Layer::new(current_layer.clone(), con.clone());
+
+			current_layer = next_layer.clone();
+
+			self.layers.push(next_layer);
+		
+		}
+
+
+	}
+}
 
 
 fn main(){

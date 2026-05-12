@@ -30,7 +30,28 @@ fn prod(weights: Vec<Vec<f32>>, input: Vec<f32>) -> Vec<f32>{
 
 }
 
+fn prod_v2v(gradient: Vec<f32>, input: Vec<f32>) -> Vec<Vec<f32>>{
 
+
+	let mut weights_gradient = vec![];
+
+	for i in 0..gradient.len(){
+		
+		let mut row = vec![];
+		
+		for j in 0..input.len(){
+		
+				row.push(input[j] * gradient[j]);
+		
+		}
+
+		weights_gradient.push(row);
+
+	}
+
+	weights_gradient
+
+}
 
 
 fn add(input: Vec<f32>,bias: Vec<f32>) -> Vec<f32>{
@@ -160,10 +181,31 @@ impl Network{
 			self.layers.push(next_layer);
 		
 		}
+}
+
+	//lets forget about batching for now and make it work for just one example
+	pub fn back_prop(&mut self,y : Vec<f32>){
+
+		let output = self.layers.last().activations;
+
+		let mut output_gradient = output.iter().zip(y.iter()).map(|x,y| x - y).collect();
+
+		//lets handle the weights for the first hidden layer
+		let out2 = self.layers[layers.len()-2].activations;
+
+		//this is the weight gradient matrix
+		let w_grad = prod_v2v(output_gradient,out2);
+
+		//this should be the error at the first hidden layer I think
+		let out2_grad = prod(cons.last(),out2);
+
+		let bias_grad = output.activations.zip(output_gradient.iter).map(|x,grad| grad * (x - x * x)).collect();
+		
+}
 
 
 	}
-}
+
 
 
 fn main(){
@@ -184,7 +226,7 @@ fn main(){
 
 	let modified = net.layers;
 
-
+	//this does indeed work brotha
 	for layer in modified{
 		
 		for element in layer.activations{

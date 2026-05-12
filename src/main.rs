@@ -41,7 +41,7 @@ fn prod_v2v(gradient: Vec<f32>, input: Vec<f32>) -> Vec<Vec<f32>>{
 		
 		for j in 0..input.len(){
 		
-				row.push(input[j] * gradient[j]);
+				row.push(input[j] * gradient[i]);
 		
 		}
 
@@ -186,20 +186,20 @@ impl Network{
 	//lets forget about batching for now and make it work for just one example
 	pub fn back_prop(&mut self,y : Vec<f32>){
 
-		let output = self.layers.last().activations;
+		let output = self.layers.last().unwrap().activations.clone();
 
-		let mut output_gradient = output.iter().zip(y.iter()).map(|x,y| x - y).collect();
+		let mut output_gradient: Vec<_> = output.iter().zip(y.iter()).map(|(x,y)| x - y).collect();
 
 		//lets handle the weights for the first hidden layer
-		let out2 = self.layers[layers.len()-2].activations;
+		let out2 = self.layers[self.layers.len()-2].activations.clone();
 
 		//this is the weight gradient matrix
-		let w_grad = prod_v2v(output_gradient,out2);
+		let w_grad = prod_v2v(output_gradient.clone(),out2.clone());
 
 		//this should be the error at the first hidden layer I think
-		let out2_grad = prod(cons.last(),out2);
+		let out2_grad = prod(self.cons.last().unwrap().weights.clone(),out2.clone());
 
-		let bias_grad = output.activations.zip(output_gradient.iter).map(|x,grad| grad * (x - x * x)).collect();
+		let bias_grad: Vec<_> = output.iter().zip(output_gradient.iter()).map(|(x,grad)| grad * (x - x * x)).collect();
 		
 }
 

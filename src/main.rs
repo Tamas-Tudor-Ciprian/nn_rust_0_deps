@@ -185,25 +185,72 @@ impl Network{
 
 	//lets forget about batching for now and make it work for just one example
 	pub fn back_prop(&mut self,y : Vec<f32>){
+		
+		//------------output layer--------------		
 
+
+		//lets handle the output layer to kick things off
+		
 		let output = self.layers.last().unwrap().activations.clone();
+		
+		//dL/da_n = a_n - y 
+		let output_error: Vec<_> = output.iter().zip(y.iter()).map(|(x,y)| x - y).collect();
+		
+		//dL/z_n = a * (1 - a) <- this is the sigmoid derivative
+		let output_derivative: Vec<_> = output.iter().map(|x| x * (1.0 - x)).collect();
+		
+		
+		//dL/a_n * dL/z_n <- chain rule derivative that will propagate
+		let delta_output : Vec<_> = output_error.iter().zip(output_derivative.iter()).map(|(x,y)| x * y).collect();
+		
+		//------------first hidden layer---------
+		
+		//now lets try and handle the first hidden layer aka a_n-1
+		let hidden = self.layers[self.layers.len() - 2].activations.clone();
+		
+		//this is the sigmoid derivative for this layer and will help propagate the error further
+		let hidden_derivative : Vec<_> = hidden.iter().map(|x| x * (1.0 - x)).collect();
+		
+		//now to get the gradient we need to transpose the weights
+		let w_out = self.cons.last().unwrap().weights.clone();
 
-		let mut output_gradient: Vec<_> = output.iter().zip(y.iter()).map(|(x,y)| x - y).collect();
 
-		//lets handle the weights for the first hidden layer
-		let out2 = self.layers[self.layers.len()-2].activations.clone();
+		let mut w_out_t = vec![];
 
-		//this is the weight gradient matrix
-		let w_grad = prod_v2v(output_gradient.clone(),out2.clone());
 
-		//this should be the error at the first hidden layer I think
-		let out2_grad = prod(self.cons.last().unwrap().weights.clone(),out2.clone());
+		for i in 0..w_out[0].len(){
+			let mut row = vec![];
+			for j in 0..w_out.len(){
+				
+				row.push(w_out[j][i]);
 
-		let bias_grad: Vec<_> = output.iter().zip(output_gradient.iter()).map(|(x,grad)| grad * (x - x * x)).collect();
+			}
+			w_out_t.push(row);
+
+		}
+
+
+		//now the past layer gradient times the transposed matrix will be the current gradient
+		let hidden_error = prod(w_out_t,delta_output.clone());
+		
+		let delta_hidden :Vec<_> = hidden_error.iter().zip(hidden_derivative.iter()).map(|(x,y)| x*y).collect();	
+
+
+
+		//=========weight and bias gradient============
+		//now this is the whole purpose of this function
+
+		// dL/dW = delta_n x a_n-1
+		let w_grad = prod_v2v(delta_output.clone(), hidden.clone());
+
+		//as per chain rule the bias gradient is simply the delta from the current layer
+
+		let bias_grad = delta_output.clone();
+			
 		
 }
-
-
+	
+	
 	}
 
 

@@ -2,6 +2,21 @@ use rand::Rng;
 use std::f32::consts;
 
 
+fn transpose_matrix(matrix: Vec<Vec<f32>>) -> Vec<Vec<f32>>{
+
+	let mut matrix_T = vec![];
+
+	for i in 0..matrix[0].len(){
+		let mut row = vec![];
+		for j in 0..matrix.len(){
+			row.push(matrix[j][i]);
+		}
+		matrix_T.push(row);
+	}
+	matrix_T
+}
+
+
 fn sigmoid(input: f32) -> f32{
 
 	1.0/(1.0 + (-input).exp())
@@ -198,7 +213,7 @@ impl Network{
 		
 		//dL/z_n = a * (1 - a) <- this is the sigmoid derivative
 		let output_derivative: Vec<_> = output.iter().map(|x| x * (1.0 - x)).collect();
-		
+	
 		
 		//dL/a_n * dL/z_n <- chain rule derivative that will propagate
 		let delta_output : Vec<_> = output_error.iter().zip(output_derivative.iter()).map(|(x,y)| x * y).collect();

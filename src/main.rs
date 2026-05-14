@@ -1,6 +1,6 @@
 use rand::Rng;
 use std::f32::consts;
-
+use plotters::pelude::*;
 
 fn transpose_matrix(matrix: Vec<Vec<f32>>) -> Vec<Vec<f32>>{
 
@@ -81,6 +81,25 @@ fn add(input: Vec<f32>,bias: Vec<f32>) -> Vec<f32>{
 }
 
 
+fn apply_lr(gradients: Vec<Connections>,lr : f64){
+
+	for gradient in gradients{
+		for i in 0..gradient.weights.len(){
+			gradient.biases[i] *= lr;
+			for j in 0..gradient.weights[0].len(){
+
+				gradient.weights[i][j] *= lr;
+
+			}
+
+		}
+	}
+
+
+
+}
+
+
 #[derive(Clone)]
 struct Layer{
 	activations: Vec<f32>,
@@ -144,6 +163,7 @@ impl Connections{
 			biases: b,
 		}
 	}
+	
 
 
 }
@@ -276,7 +296,7 @@ impl Network{
 	}
 
 	//once you got the averaged gradient over a batch you can apply it with this
-	pub fn apply_gradient(&mut self , grad: Vec<connections>){
+	pub fn apply_gradient(&mut self , grad: Vec<Connections>){
 
 
 
@@ -304,18 +324,34 @@ fn main(){
 
 	net.pass(input_layer);
 
-	let modified = net.layers;
+	/*think I will initially teach it to aproximate a sin to see if it can actually learn
+*/
+	//will just use a lib for plotting because I don't have the patience to draw graphs in the cli myself
 
-	//this does indeed work brotha
-	for layer in modified{
-		
-		for element in layer.activations{
+	//lets experiment
 
-			print!("| {} | ",element);
+	let root = BitMapBackend::new("data.png",(800,600)).into_drawign_area();
+	root.fill(&WHITE).unwrap();
+	let mut chart = CharBuilder::on(&root)
+	.caption("f(x) = sin(10x)",("sans-serif",40))
+	.margin(20)
+	.set_all_label_area_size(40)
+	.build_cartesian_2d(-10f32..10f32, -5f32..100f32).unwrap();
+	
 
-		}
+	chart.configure_mesh().draw();
 
-		println!(" ");
+	chart.draw_series(LineSeries::new(
+		(-100..100).map(|x| x as f32 / 10.0).map(|x| (x,x.sin())),
+		&RED,)).unwrap();
 
-	}
+
+	Ok(())
+
+
+
+
+
+
+
 }

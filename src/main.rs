@@ -76,7 +76,7 @@ fn add(input: Vec<f32>,bias: Vec<f32>) -> Vec<f32>{
 	for i in 0..input.len(){
 
 		output.push(input[i] + bias[i]);
-}
+	}
 	output
 }
 
@@ -99,6 +99,27 @@ fn apply_lr(gradients: Vec<Connections>,lr : f32){
 
 }
 
+fn avg(gradient_batch: Vec<Vec<Connections>)->Vec<Connections>{
+
+	let n = gradients.len();
+
+	let mut avg
+	
+	for mut gradient in gradients{
+		for i in 0..gradient.weights.len(){
+			gradient.biases[i] *= lr;
+			for j in 0..gradient.weights[0].len(){
+
+				gradient.weights[i][j] *= lr;
+
+			}
+
+		}
+	}
+
+
+}
+
 
 #[derive(Clone)]
 struct Layer{
@@ -112,17 +133,17 @@ impl Layer {
 			activations : input_data,
 
 		}
-}
+	}
 	
 	fn new(input: Layer, cons: Connections ) -> Self{
-	let non_biased = prod(cons.weights, input.activations);
-	let biased = add(non_biased,cons.biases);
-	let squished = biased.iter().map(|x| sigmoid(*x)).collect();
-	Self{
-		activations: squished,
+		let non_biased = prod(cons.weights, input.activations);
+		let biased = add(non_biased,cons.biases);
+		let squished = biased.iter().map(|x| sigmoid(*x)).collect();
+		Self{
+			activations: squished,
 	
-	}	
-}
+		}	
+	}
 }
 
 
@@ -154,14 +175,29 @@ impl Connections{
 	Self {
 		weights: weights,
 		biases: biases,
-	}
-}
+		}
 
 	fn from_con(w: Vec<Vec<f32>>, b: Vec<f32>)-> Self{
 		Self{
 			weights: w,
 			biases: b,
 		}
+	}
+
+
+
+	fn empty(st_layer_len: usize,nd_layer_len: usize) -> Self {
+		let mut rng = rand::thread_rng();
+		
+		let mut weights = vec![vec![0.0,st_layer_len],nd_layer_len];
+		
+		let mut biases = vec![0.0,nd_layer_len];
+
+		Self {
+			weights: weights,
+			biases: biases,
+		}
+	
 	}
 	
 
@@ -225,7 +261,6 @@ impl Network{
 		}
 }
 
-	//lets forget about batching for now and make it work for just one example
 	pub fn backprop_gradient(&mut self,y : Vec<f32>)->Vec<Connections>{
 		
 
@@ -302,8 +337,7 @@ impl Network{
 
 		for  k in 0..grad.len(){
 
-			let mut w = &mut network[k].weights;
-			let mut b = &mut network[k].biases;
+			let Connections { weights: w, biases: b } = &mut network[k];
 
 			let w_grad = &grad[k].weights;
 			let b_grad = &grad[k].biases;
@@ -326,8 +360,8 @@ impl Network{
 
 fn main(){
 
-	//I'ma to a quick run of the foward pass to see hows it lookin
 
+	let mut rng = rand::thread_rng();
 
 	//Lets init the layer structure
 	let layers :Vec<usize> = vec![3,2,1];
@@ -341,7 +375,7 @@ fn main(){
 	net.pass(input_layer);
 
 	/*think I will initially teach it to aproximate a sin to see if it can actually learn
-*/
+	*/
 	//will just use a lib for plotting because I don't have the patience to draw graphs in the cli myself
 
 	//lets experiment
@@ -350,15 +384,56 @@ fn main(){
 	root.fill(&WHITE).unwrap();
 
 	let mut chart = ChartBuilder::on(&root)
-	.caption("f(x) = sin(10x)",("sans-serif",40))
+	.caption("f(x) = sin(10x) + 1",("sans-serif",40))
 	.margin(20)
 	.set_all_label_area_size(40)
-	.build_cartesian_2d(-10f32..10f32, -1f32..1f32).unwrap();
+	.build_cartesian_2d(-10f32..10f32, 0f32..2f32).unwrap();
 	
 	chart.configure_mesh().draw();
 
 	chart.draw_series(LineSeries::new(
-		(-100..100).map(|x| x as f32 / 10.0).map(|x| (x,x.sin())),
+		(-100..100).map(|x| x as f32 / 10.0).map(|x| (x,x .sin() + 1.0)),
 		&RED,)).unwrap();
 
+	//sin is a 2D func so 1 input 1 output
+	let layers :Vec<usize> = vec![1,10,10,1];
+
+	//this we will train
+	let mut net = Network::new(layers);
+
+	//lets do 1000 training iterations in batches of 10
+
+	for _ in 0..100 {
+
+
+		//so 10 random inputs in between -10 and 10
+		
+		let inputs : Vec<_> = 
+		(0..20).map(|_| rng.gen::<f32>() * 20.0 - 10.0)
+		.collect();
+
+		let outputs : Vec<_> = inputs.iter().map( |x| x.sin() + 1.0).collect();
+
+
+		//now that we got a batch of data we gotta get the gadients for them
+
+		let mut gradients = vec![];
+
+		for i in 0..inputs.len(){
+			
+			let input_activation = vec![inputs[i]];
+
+			let input_layer = Layer::first(input_activation);
+
+			net.pass(input_layer);
+			
+			let gradient = net.backprop_gradient(vec![output[i]]);
+
+
+			gradients.push(gradient);
+		}
+
+
+
+	}
 }

@@ -1,6 +1,6 @@
 use rand::Rng;
 use std::f32::consts;
-use plotters::pelude::*;
+use plotters::prelude::*;
 
 fn transpose_matrix(matrix: Vec<Vec<f32>>) -> Vec<Vec<f32>>{
 
@@ -81,9 +81,9 @@ fn add(input: Vec<f32>,bias: Vec<f32>) -> Vec<f32>{
 }
 
 
-fn apply_lr(gradients: Vec<Connections>,lr : f64){
+fn apply_lr(gradients: Vec<Connections>,lr : f32){
 
-	for gradient in gradients{
+	for mut gradient in gradients{
 		for i in 0..gradient.weights.len(){
 			gradient.biases[i] *= lr;
 			for j in 0..gradient.weights[0].len(){
@@ -297,12 +297,28 @@ impl Network{
 
 	//once you got the averaged gradient over a batch you can apply it with this
 	pub fn apply_gradient(&mut self , grad: Vec<Connections>){
+	
+		let mut network = &mut self.cons;
 
+		for  k in 0..grad.len(){
 
+			let mut w = &mut network[k].weights;
+			let mut b = &mut network[k].biases;
 
+			let w_grad = &grad[k].weights;
+			let b_grad = &grad[k].biases;
+			for i in 0..w.len(){
+				b[i] -= b_grad[i];
+				for j in 0..w[0].len(){
+
+					w[i][j] -= w_grad[i][j];
+
+				}
+
+			}
+		}
 
 	}
-	
 	
 }
 
@@ -330,28 +346,19 @@ fn main(){
 
 	//lets experiment
 
-	let root = BitMapBackend::new("data.png",(800,600)).into_drawign_area();
+	let root = BitMapBackend::new("./training/data.png",(800,600)).into_drawing_area();
 	root.fill(&WHITE).unwrap();
-	let mut chart = CharBuilder::on(&root)
+
+	let mut chart = ChartBuilder::on(&root)
 	.caption("f(x) = sin(10x)",("sans-serif",40))
 	.margin(20)
 	.set_all_label_area_size(40)
-	.build_cartesian_2d(-10f32..10f32, -5f32..100f32).unwrap();
+	.build_cartesian_2d(-10f32..10f32, -1f32..1f32).unwrap();
 	
-
 	chart.configure_mesh().draw();
 
 	chart.draw_series(LineSeries::new(
 		(-100..100).map(|x| x as f32 / 10.0).map(|x| (x,x.sin())),
 		&RED,)).unwrap();
-
-
-	Ok(())
-
-
-
-
-
-
 
 }

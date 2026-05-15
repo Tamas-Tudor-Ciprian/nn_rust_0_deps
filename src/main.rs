@@ -80,27 +80,8 @@ fn add(input: Vec<f32>,bias: Vec<f32>) -> Vec<f32>{
 	output
 }
 
-
-fn apply_lr(gradients: Vec<Connections>,lr : f32){
-
-	for mut gradient in gradients{
-		for i in 0..gradient.weights.len(){
-			gradient.biases[i] *= lr;
-			for j in 0..gradient.weights[0].len(){
-
-				gradient.weights[i][j] *= lr;
-
-			}
-
-		}
-	}
-
-
-
-}
-
 //this is so you can avergage the gradient batch
-fn avg(gradient_batch: Vec<Vec<Connections>>)->Vec<Connections>{
+fn avg(gradient_batch: Vec<Vec<Connections>>,lr: f32)->Vec<Connections>{
 
 	//we divide the sum of all values by this
 	let n = gradient_batch.len();
@@ -137,10 +118,10 @@ fn avg(gradient_batch: Vec<Vec<Connections>>)->Vec<Connections>{
 
 	for mut gradient in sum.iter_mut(){
 		for i in 0..gradient.weights.len(){
-			gradient.biases[i] *= to_apply;
+			gradient.biases[i] *= to_apply * lr;
 			for j in 0..gradient.weights[0].len(){
 
-				gradient.weights[i][j] *= to_apply;
+				gradient.weights[i][j] *= to_apply * lr;
 
 			}
 
@@ -393,19 +374,6 @@ impl Network{
 fn main(){
 
 
-	let mut rng = rand::thread_rng();
-
-	//Lets init the layer structure
-	let layers :Vec<usize> = vec![3,2,1];
-
-	let input_activations :Vec<f32> = vec![2.5,1.3,0.2];
-
-	let input_layer = Layer::first(input_activations);
-	
-	let mut net = Network::new(layers);
-
-	net.pass(input_layer);
-
 	/*think I will initially teach it to aproximate a sin to see if it can actually learn
 	*/
 	//will just use a lib for plotting because I don't have the patience to draw graphs in the cli myself
@@ -435,7 +403,7 @@ fn main(){
 
 	//lets do 1000 training iterations in batches of 10
 
-	for _ in 0..100 {
+	for step in 0..100 {
 
 
 		//so 10 random inputs in between -10 and 10
@@ -465,6 +433,43 @@ fn main(){
 			gradients.push(gradient);
 		}
 
+		//we average and apply the learning rate
+		let average_grad = avg(gradients,0.1);
+
+
+		//and we apply the grad
+		net.apply_gradient(average_grad);
+
+		//and we check out what the network can do by outputing a graph with it
+		let filename = format!(".training/output{step}.png");
+
+		let root = BitMapBackend::new(&filename,(800,600)).into_drawing_area();
+		root.fill(&WHITE).unwrap();
+
+		let mut chart = ChartBuilder::on(&root)
+			.caption(format!("Step {step}"), ("sans-serif",40))
+			.margin(20)
+			.set_all_label_area_size(40)
+			.build_cartesian_2d(-10f32..10f32, 0f32..2f32)
+			.unwrap();
+
+		chart.configure_mesh().draw().unwrap();
+
+		chart
+			.draw_series(LineSeries::new(
+				(-100..100)
+					.map(|x| x as f32 / 10.0)
+					.map(|x| {
+    							let input_layer = Layer::first(vec![x]);
+   								 net.pass(input_layer);
+ 							   let output = net.layers.last().unwrap().activations[0];
+ 							   (x, output)
+							}),
+					&RED,
+			)).unwrap();
+
+		//force flush
+		root.present().unwrap();
 
 
 	}

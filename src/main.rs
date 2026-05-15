@@ -405,7 +405,7 @@ fn main(){
 
 	//lets do 1000 training iterations in batches of 10
 
-	for step in 0..100 {
+	for step in 0..100000 {
 
 
 		//so 10 random inputs in between -10 and 10
@@ -436,43 +436,46 @@ fn main(){
 		}
 
 		//we average and apply the learning rate
-		let average_grad = avg(gradients,0.1);
+		let average_grad = avg(gradients,0.5);
 
 
 		//and we apply the grad
 		net.apply_gradient(average_grad);
 
-		//and we check out what the network can do by outputing a graph with it
-		let filename = format!("./training/output{step}.png");
 
-		let root = BitMapBackend::new(&filename,(800,600)).into_drawing_area();
-		root.fill(&WHITE).unwrap();
+		if step % 1000 == 0 {
 
-		let mut chart = ChartBuilder::on(&root)
-			.caption(format!("Step {step}"), ("sans-serif",40))
-			.margin(20)
-			.set_all_label_area_size(40)
-			.build_cartesian_2d(-10f32..10f32, 0f32..2f32)
-			.unwrap();
+			//and we check out what the network can do by outputing a graph with it
+			let filename = format!("./training/output{step}.png");
 
-		chart.configure_mesh().draw().unwrap();
+			let root = BitMapBackend::new(&filename,(800,600)).into_drawing_area();
+			root.fill(&WHITE).unwrap();
 
-		chart
-			.draw_series(LineSeries::new(
-				(-100..100)
-					.map(|x| x as f32 / 10.0)
-					.map(|x| {
-    							let input_layer = Layer::first(vec![x]);
-   								 net.pass(input_layer);
- 							   let output = net.layers.last().unwrap().activations[0];
- 							   (x, output)
-							}),
-					&RED,
-			)).unwrap();
+			let mut chart = ChartBuilder::on(&root)
+				.caption(format!("Step {step}"), ("sans-serif",40))
+				.margin(20)
+				.set_all_label_area_size(40)
+				.build_cartesian_2d(-10f32..10f32, 0f32..2f32)
+				.unwrap();
 
-		//force flush
-		root.present().unwrap();
+			chart.configure_mesh().draw().unwrap();
 
+			chart
+				.draw_series(LineSeries::new(
+					(-100..100)
+						.map(|x| x as f32 / 10.0)
+						.map(|x| {
+	    							let input_layer = Layer::first(vec![x]);
+   									 net.pass(input_layer);
+ 								   let output = net.layers.last().unwrap().activations[0];
+ 								   (x, output)
+								}),
+						&RED,
+				)).unwrap();
+
+			//force flush
+			root.present().unwrap();
+		}
 
 	}
 }

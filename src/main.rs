@@ -99,23 +99,55 @@ fn apply_lr(gradients: Vec<Connections>,lr : f32){
 
 }
 
-fn avg(gradient_batch: Vec<Vec<Connections>)->Vec<Connections>{
+//this is so you can avergage the gradient batch
+fn avg(gradient_batch: Vec<Vec<Connections>>)->Vec<Connections>{
 
-	let n = gradients.len();
+	//we divide the sum of all values by this
+	let n = gradient_batch.len();
 
-	let mut avg
+
+
+	//now for the complicated part, we declare an copy of the first gradient and sum everything in it
+	let mut sum = gradient_batch[0].clone();
 	
-	for mut gradient in gradients{
+	//now we iterate from the second and sum
+	for i in 1..gradient_batch.len(){
+		let current_grad = gradient_batch[i].clone();
+
+		//now we go trough each connections element
+		for j in 0..current_grad.len(){
+			let current_w = current_grad[j].weights.clone();
+			let current_b = current_grad[j].biases.clone();
+			//the actual summing algo starts here
+			for k in 0..current_w.len(){
+				sum[j].biases[k] +=current_grad[j].biases[k];
+				for l in 0..current_w[0].len(){
+					sum[j].weights[k][l] += current_grad[j].weights[k][l];
+				}
+			}
+
+
+		}
+
+
+
+	}
+
+	let to_apply = 1.0/(n as f32);
+
+	for mut gradient in sum.iter_mut(){
 		for i in 0..gradient.weights.len(){
-			gradient.biases[i] *= lr;
+			gradient.biases[i] *= to_apply;
 			for j in 0..gradient.weights[0].len(){
 
-				gradient.weights[i][j] *= lr;
+				gradient.weights[i][j] *= to_apply;
 
 			}
 
 		}
 	}
+
+	sum
 
 
 }
@@ -147,8 +179,6 @@ impl Layer {
 }
 
 
-
-
 #[derive(Clone)]
 struct Connections{
 	weights: Vec<Vec<f32>>,
@@ -172,9 +202,11 @@ impl Connections{
 		(0..nd_layer_len).map(|_| rng.gen::<f32>() * 4.0 - 2.0) //hope the biases don't have too big a range
 		.collect();
 
-	Self {
-		weights: weights,
-		biases: biases,
+		Self {
+			weights: weights,
+			biases: biases,
+			}
+
 		}
 
 	fn from_con(w: Vec<Vec<f32>>, b: Vec<f32>)-> Self{
@@ -189,9 +221,9 @@ impl Connections{
 	fn empty(st_layer_len: usize,nd_layer_len: usize) -> Self {
 		let mut rng = rand::thread_rng();
 		
-		let mut weights = vec![vec![0.0,st_layer_len],nd_layer_len];
+		let mut weights = vec![vec![0.0;st_layer_len];nd_layer_len];
 		
-		let mut biases = vec![0.0,nd_layer_len];
+		let mut biases = vec![0.0;nd_layer_len];
 
 		Self {
 			weights: weights,
@@ -259,7 +291,7 @@ impl Network{
 			self.layers.push(next_layer);
 		
 		}
-}
+	}
 
 	pub fn backprop_gradient(&mut self,y : Vec<f32>)->Vec<Connections>{
 		
@@ -427,7 +459,7 @@ fn main(){
 
 			net.pass(input_layer);
 			
-			let gradient = net.backprop_gradient(vec![output[i]]);
+			let gradient = net.backprop_gradient(vec![outputs[i]]);
 
 
 			gradients.push(gradient);

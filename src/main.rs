@@ -309,10 +309,10 @@ impl Network{
 			//this is the sigmoid derivative for this layer and will help propagate the error further
 			let hidden_derivative : Vec<_> = hidden.iter().map(|x| x * (1.0 - x)).collect();
 		
+			let w_out = self.cons[self.cons.len() - 1 - (i - 2)].weights.clone();
+
+
 			//now to get the gradient we need to transpose the weights
-			let w_out = self.cons[self.cons.len() - i + 1].weights.clone();
-
-
 			let mut w_out_T = transpose_matrix(w_out);
 
 			//now the past layer gradient times the transposed matrix will be the current gradient
@@ -373,6 +373,8 @@ impl Network{
 
 fn main(){
 
+	//for the random inputs	
+	let mut rng = rand::thread_rng();
 
 	/*think I will initially teach it to aproximate a sin to see if it can actually learn
 	*/
@@ -384,15 +386,15 @@ fn main(){
 	root.fill(&WHITE).unwrap();
 
 	let mut chart = ChartBuilder::on(&root)
-	.caption("f(x) = sin(10x) + 1",("sans-serif",40))
+	.caption("f(x) = (sin(x) + 1)/2",("sans-serif",40))
 	.margin(20)
 	.set_all_label_area_size(40)
 	.build_cartesian_2d(-10f32..10f32, 0f32..2f32).unwrap();
 	
-	chart.configure_mesh().draw();
+	chart.configure_mesh().draw().unwrap();
 
 	chart.draw_series(LineSeries::new(
-		(-100..100).map(|x| x as f32 / 10.0).map(|x| (x,x .sin() + 1.0)),
+		(-100..100).map(|x| x as f32 / 10.0).map(|x| (x,(x.sin() + 1.0)/2.0)),
 		&RED,)).unwrap();
 
 	//sin is a 2D func so 1 input 1 output
@@ -412,7 +414,7 @@ fn main(){
 		(0..20).map(|_| rng.gen::<f32>() * 20.0 - 10.0)
 		.collect();
 
-		let outputs : Vec<_> = inputs.iter().map( |x| x.sin() + 1.0).collect();
+		let outputs : Vec<_> = inputs.iter().map( |x| (x.sin() + 1.0)/2.0).collect();
 
 
 		//now that we got a batch of data we gotta get the gadients for them
@@ -441,7 +443,7 @@ fn main(){
 		net.apply_gradient(average_grad);
 
 		//and we check out what the network can do by outputing a graph with it
-		let filename = format!(".training/output{step}.png");
+		let filename = format!("./training/output{step}.png");
 
 		let root = BitMapBackend::new(&filename,(800,600)).into_drawing_area();
 		root.fill(&WHITE).unwrap();
